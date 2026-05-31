@@ -123,14 +123,15 @@
                         <h2 id="global-saved-amount" class="text-4xl md:text-5xl font-black tracking-tight text-white mt-1">R$ 0,00</h2>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="bg-brand-dark/40 border border-gray-800/40 rounded-2xl p-4">
-                            <span class="text-xs text-brand-grayText block">Meta Total Combinada</span>
-                            <span id="global-target-amount" class="text-lg font-bold text-gray-200 block mt-1">R$ 0,00</span>
+                    <!-- Ajustado para colunas responsivas e anti-transbordo com min-w-0 e truncate -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div class="bg-brand-dark/40 border border-gray-800/40 rounded-2xl p-3 sm:p-4 min-w-0">
+                            <span class="text-xs text-brand-grayText block truncate">Meta Total Combinada</span>
+                            <span id="global-target-amount" class="text-sm sm:text-base md:text-lg font-bold text-gray-200 block mt-1 truncate">R$ 0,00</span>
                         </div>
-                        <div class="bg-brand-dark/40 border border-gray-800/40 rounded-2xl p-4">
-                            <span class="text-xs text-brand-grayText block">Desafios Ativos</span>
-                            <span id="global-challenge-count" class="text-lg font-bold text-brand-orange block mt-1">0</span>
+                        <div class="bg-brand-dark/40 border border-gray-800/40 rounded-2xl p-3 sm:p-4 min-w-0">
+                            <span class="text-xs text-brand-grayText block truncate">Desafios Ativos</span>
+                            <span id="global-challenge-count" class="text-sm sm:text-base md:text-lg font-bold text-brand-orange block mt-1 truncate">0</span>
                         </div>
                     </div>
                 </div>
@@ -197,23 +198,23 @@
                     </div>
                 </div>
 
-                <!-- Estatísticas do Desafio (Fontes reduzidas para sofisticação) -->
+                <!-- Estatísticas do Desafio (Fontes diminuídas para tamanho mais sofisticado e responsivo) -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-gray-800/60">
                     <div>
                         <span class="text-xs text-brand-grayText block">Total Guardado</span>
-                        <span id="detail-saved" class="text-lg sm:text-xl font-extrabold text-brand-orange mt-1 block">R$ 0,00</span>
+                        <span id="detail-saved" class="text-base sm:text-lg font-extrabold text-brand-orange mt-1 block truncate">R$ 0,00</span>
                     </div>
                     <div>
                         <span class="text-xs text-brand-grayText block">Meta Final</span>
-                        <span id="detail-target" class="text-lg sm:text-xl font-extrabold text-white mt-1 block">R$ 0,00</span>
+                        <span id="detail-target" class="text-base sm:text-lg font-extrabold text-white mt-1 block truncate">R$ 0,00</span>
                     </div>
                     <div>
                         <span class="text-xs text-brand-grayText block">Depósitos Concluídos</span>
-                        <span id="detail-progress-ratio" class="text-lg sm:text-xl font-bold text-gray-200 mt-1 block">0 de 30</span>
+                        <span id="detail-progress-ratio" class="text-base sm:text-lg font-bold text-gray-200 mt-1 block truncate">0 de 30</span>
                     </div>
                     <div>
                         <span class="text-xs text-brand-grayText block">Falta Guardar</span>
-                        <span id="detail-remaining" class="text-lg sm:text-xl font-bold text-gray-300 mt-1 block">R$ 0,00</span>
+                        <span id="detail-remaining" class="text-base sm:text-lg font-bold text-gray-300 mt-1 block truncate">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -366,7 +367,7 @@
                     <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>O nosso gerador inteligente criará um tabuleiro perfeito com exatamente 5 colunas (sem sobrar espaços) utilizando o menor número de parcelas possível (mínimo de 30 e máximo de 80 bolinhas). Os valores oscilarão de forma equilibrada para tornar o processo psicologicamente confortável.</span>
+                    <span>O nosso gerador inteligente criará um tabuleiro perfeito com exatamente 5 colunas (sem sobrar espaços) utilizando o menor número de parcelas possível (mínimo de 30 e máximo de 100 bolinhas). Os valores oscilarão em um formato de onda progressiva de poder e terminarão sempre em 0 (multiples de 10) para tornar o processo psicologicamente confortável.</span>
                 </div>
             </div>
 
@@ -540,66 +541,89 @@
             }
         }
 
-        // Algoritmo de Geração de Valores Inteligentes (Sem quebras de centavos feias)
-        function generateSmartValues(target, maxBubble, count) {
-            if (count < 1) count = 30;
-            if (maxBubble * count < target) {
-                maxBubble = Math.ceil(target / count);
+        // ================= NOVO GERADOR CENTRALIZADO DE DESAFIOS =================
+        // Desenha uma curva progressiva de dificuldade, garante dezenas limpas terminadas em 0
+        // e um tabuleiro perfeito alinhado em 5 colunas de 30 a 100 depósitos.
+        function getOptimizedChallengeData(target, maxBubble) {
+            // 1. Encontra a quantidade inicial teórica baseada em um rendimento médio saudável de 55% da bolinha máxima
+            let theoreticalCount = Math.ceil(target / (maxBubble * 0.55));
+            
+            // 2. Arredonda para cima para o múltiplo de 5 para garantir o grid 5xX perfeito
+            let count = Math.ceil(theoreticalCount / 5) * 5;
+            
+            // 3. Trava nos limites saudáveis (Mínimo de 30 e o novo teto de 100 bolinhas)
+            if (count < 30) {
+                count = 30;
+            }
+            if (count > 100) {
+                count = 100;
+                // Caso a meta seja ultra pesada, ajusta a bolinha máxima para permitir concluir com 100 passos
+                if (maxBubble * 100 < target) {
+                    maxBubble = Math.ceil(target / 100);
+                }
             }
 
-            const averageValue = target / count;
-            let values = [];
-
-            // Determinar o arredondamento ideal (step)
+            // 4. Determina o valor do Step garantindo que termine em zero (múltiplo de 10)
             let step = 10;
             if (maxBubble >= 1500) step = 100;
             else if (maxBubble >= 500) step = 50;
             else if (maxBubble >= 100) step = 10;
-            else if (maxBubble >= 20) step = 5;
-            else step = 1;
+            else step = 10;
 
-            // Criar uma curva sinusoidal de oscilação para ser psicologicamente interessante
+            // 5. Define um valor mínimo saudável para os primeiros depósitos básicos
+            let minVal = Math.max(step, Math.round((maxBubble * 0.15) / step) * step);
+            
+            // 6. Cria valores base usando uma curva de crescimento exponencial (mais valores menores/médios, poucos valores grandes)
+            let values = [];
             for (let i = 0; i < count; i++) {
-                const progressRatio = i / (count - 1 || 1);
-                const wave = Math.sin(progressRatio * Math.PI * 4.5); // Produz picos e vales
-                
-                let val = averageValue * (1 + wave * 0.45); 
-                
-                if (val > maxBubble) val = maxBubble;
-                if (val < averageValue * 0.2) val = averageValue * 0.2; 
-
-                // Arredondar para o step
+                let ratio = Math.pow(i / (count - 1 || 1), 1.6); // Exponente 1.6 acentua a curva gamificada
+                let val = minVal + ratio * (maxBubble - minVal);
                 val = Math.round(val / step) * step;
-                if (val === 0) val = step;
-
+                if (val <= 0) val = step;
                 values.push(val);
             }
 
-            // Ajustar o somatório para dar exatamente a meta final
+            // 7. Balanceador fino de precisão para atingir a meta perfeitamente mantendo múltiplos de Step
             let currentSum = values.reduce((a, b) => a + b, 0);
-            let difference = target - currentSum;
+            let diff = target - currentSum;
             let limitCounter = 0;
 
-            while (difference !== 0 && limitCounter < 1500) {
+            while (diff !== 0 && limitCounter < 2000) {
                 limitCounter++;
                 for (let i = 0; i < values.length; i++) {
-                    if (difference === 0) break;
-
-                    if (difference > 0) {
+                    if (diff === 0) break;
+                    if (diff > 0) {
                         if (values[i] + step <= maxBubble) {
                             values[i] += step;
-                            difference -= step;
+                            diff -= step;
                         }
                     } else {
-                        if (values[i] - step > 0) {
+                        if (values[i] - step >= minVal) {
                             values[i] -= step;
-                            difference += step;
+                            diff += step;
                         }
                     }
                 }
             }
 
-            // Intercalar os maiores e menores valores (progressão ondulada alternada)
+            // Se ainda restar resíduo (muito raro), distribui sem restrição de teto máximo
+            if (diff > 0) {
+                for (let i = 0; i < values.length; i++) {
+                    if (diff === 0) break;
+                    values[i] += step;
+                    diff -= step;
+                }
+            } else if (diff < 0) {
+                for (let i = values.length - 1; i >= 0; i--) {
+                    if (diff === 0) break;
+                    if (values[i] - step >= step) {
+                        values[i] -= step;
+                        diff += step;
+                    }
+                }
+            }
+
+            // 8. Embaralhamento dinâmico em estilo onda para alternar picos e vales de dificuldade no grid de 5 colunas
             values.sort((a, b) => a - b);
             let finalValues = [];
             let leftIdx = 0;
@@ -616,7 +640,11 @@
                 leftIdx++;
             }
 
-            return finalValues;
+            return {
+                count: count,
+                maxBubble: maxBubble,
+                values: finalValues
+            };
         }
 
         // Controlar a navegação de telas
@@ -691,14 +719,14 @@
                     </button>
 
                     <!-- Área clicável do card para entrar no desafio -->
-                    <div onclick="goToChallenge('${challenge.id}')" class="cursor-pointer flex-grow flex flex-col justify-between pr-4">
+                    <div onclick="goToChallenge('${challenge.id}')" class="cursor-pointer flex-grow flex flex-col justify-between pr-4 min-w-0">
                         <div>
                             <div class="flex justify-between items-start mb-4 pr-6">
-                                <div>
-                                    <h4 class="text-xl font-bold tracking-tight text-white group-hover:text-brand-orange transition-colors">${challenge.title}</h4>
+                                <div class="min-w-0">
+                                    <h4 class="text-xl font-bold tracking-tight text-white group-hover:text-brand-orange transition-colors truncate">${challenge.title}</h4>
                                     <span class="text-[10px] text-brand-grayText uppercase font-semibold mt-1 inline-block">Criado em ${challenge.createdAt}</span>
                                 </div>
-                                <span class="text-xs bg-brand-orange/10 text-brand-orange font-bold px-2.5 py-1 rounded-xl border border-brand-orange/10">${percent}%</span>
+                                <span class="text-xs bg-brand-orange/10 text-brand-orange font-bold px-2.5 py-1 rounded-xl border border-brand-orange/10 shrink-0">${percent}%</span>
                             </div>
 
                             <div class="w-full bg-brand-dark h-2 rounded-full overflow-hidden p-0.5 border border-gray-800 mb-6">
@@ -707,11 +735,11 @@
                         </div>
 
                         <div class="flex items-end justify-between pt-4 border-t border-gray-800/60 mt-auto">
-                            <div>
+                            <div class="min-w-0 pr-2">
                                 <span class="text-xs text-brand-grayText block">Guardado</span>
-                                <span class="text-lg font-black text-white">${formatMoney(totalSaved)} <span class="text-xs text-brand-grayText font-normal">/ ${formatMoney(totalTarget)}</span></span>
+                                <span class="text-lg font-black text-white block truncate">${formatMoney(totalSaved)} <span class="text-xs text-brand-grayText font-normal">/ ${formatMoney(totalTarget)}</span></span>
                             </div>
-                            <button class="bg-brand-dark hover:bg-brand-orange text-white border border-gray-800 hover:border-brand-orange hover:shadow-lg hover:shadow-brand-orange/15 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5">
+                            <button class="bg-brand-dark hover:bg-brand-orange text-white border border-gray-800 hover:border-brand-orange hover:shadow-lg hover:shadow-brand-orange/15 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 shrink-0">
                                 <span>Jogar</span>
                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
@@ -896,13 +924,13 @@
             if (actionApplied === 'deposito') {
                 showToast(
                     "Depósito Confirmado!",
-                    `Guardou com sucesso ${formatMoney(sumSaved)}!`,
+                    "Guardou com sucesso " + formatMoney(sumSaved) + "!",
                     "success"
                 );
             } else {
                 showToast(
                     "Alterações Desfeitas",
-                    `O valor de ${formatMoney(sumSaved)} retornou ao saldo em falta.`,
+                    "O valor de " + formatMoney(sumSaved) + " retornou ao saldo em falta.",
                     "info"
                 );
             }
@@ -1024,36 +1052,16 @@
                 return;
             }
 
-            // --- ALGORITMO DINÂMICO DE OTIMIZAÇÃO DE BOLINHAS ---
-            // 1. Calcula o mínimo absoluto de bolinhas necessárias
-            let minBubblesNeeded = Math.ceil(target / maxBubble);
-            
-            // 2. Arredonda para cima para o próximo múltiplo de 5 para garantir a matriz 5xX perfeita
-            let count = Math.ceil(minBubblesNeeded / 5) * 5;
-            
-            // 3. Garante o novo mínimo saudável de 30 depósitos (6 linhas completas)
-            if (count < 30) {
-                count = 30;
-            }
-            
-            // 4. Limita a quantidade máxima absoluta a 80 bolinhas (16 linhas completas)
-            if (count > 80) {
-                count = 80;
-                // Caso a meta seja muito alta, reajusta sutilmente o valor máximo para não ultrapassar 80 bolinhas
-                if (maxBubble * 80 < target) {
-                    maxBubble = Math.ceil(target / 80);
-                }
-            }
-
-            const values = generateSmartValues(target, maxBubble, count);
+            // Invoca o algoritmo refinado de escalonamento exponencial de dezenas
+            const opt = getOptimizedChallengeData(target, maxBubble);
 
             const newChallenge = {
                 id: 'challenge-' + Date.now(),
                 title: title,
                 targetAmount: target,
-                maxBubble: maxBubble,
+                maxBubble: opt.maxBubble,
                 createdAt: new Date().toLocaleDateString('pt-BR'),
-                bubbles: values.map((val, idx) => ({
+                bubbles: opt.values.map((val, idx) => ({
                     id: idx,
                     value: val,
                     completed: false
@@ -1065,11 +1073,11 @@
             closeCreateModal();
             renderHome();
             
-            showToast("Sucesso!", `Desafio de poupança "${title}" criado com sucesso! (${count} depósitos)`, "success");
+            showToast("Sucesso!", `Desafio de poupança "${title}" criado com sucesso! (${opt.count} depósitos)`, "success");
         }
 
 
-        // ================= SISTEMA DE EDIÇÃO DE DESAFIO (MODAL DE EDICÃO) =================
+        // ================= SISTEMA DE EDIÇÃO DE DESAFIO (MODAL DE EDIÇÃO) =================
         function openEditModalFromId(id) {
             editingChallengeId = id;
             const challenge = challenges.find(c => c.id === id);
@@ -1103,7 +1111,7 @@
             }, 300);
         }
 
-        // Salvar alterações e recalcular bolinhas de forma proporcional caso o valor total mude, preservando o valor poupado
+        // Salvar alterações e recalcular bolinhas de forma proporcional usando o novo gerador
         function saveEditedChallenge() {
             const challenge = challenges.find(c => c.id === editingChallengeId);
             if (!challenge) return;
@@ -1127,46 +1135,21 @@
 
             challenge.title = newTitle;
 
-            // Se o valor total mudou, escalamos todas as bolinhas proporcionalmente e aplicamos mapeamento inteligente do progresso
+            // Se o valor total mudou, escalamos todas as bolinhas proporcionalmente usando o gerador otimizado
             if (newTarget !== oldTarget) {
-                const scaleFactor = newTarget / oldTarget;
                 challenge.targetAmount = newTarget;
 
-                // Definir novo step para deixar valores arredondados limpos
-                const approxMax = challenge.maxBubble * scaleFactor;
-                let step = 10;
-                if (approxMax >= 1500) step = 100;
-                else if (approxMax >= 500) step = 50;
-                else if (approxMax >= 100) step = 10;
-                else if (approxMax >= 20) step = 5;
-                else step = 1;
-
-                let newMaxBubble = Math.round(approxMax / step) * step;
-                if (newMaxBubble <= 0) newMaxBubble = step;
-
-                // Otimização de bolinhas
-                let minBubblesNeeded = Math.ceil(newTarget / newMaxBubble);
-                let count = Math.ceil(minBubblesNeeded / 5) * 5;
-                
-                if (count < 30) count = 30;
-                if (count > 80) {
-                    count = 80;
-                    if (newMaxBubble * 80 < newTarget) {
-                        newMaxBubble = Math.ceil(newTarget / 80);
-                    }
-                }
-
-                // Gera novos valores
-                const newValues = generateSmartValues(newTarget, newMaxBubble, count);
+                // Usa o gerador unificado para produzir uma nova grade saudável
+                const opt = getOptimizedChallengeData(newTarget, challenge.maxBubble);
 
                 // Cria novos objetos desmarcados
-                let newBubbles = newValues.map((val, idx) => ({
+                let newBubbles = opt.values.map((val, idx) => ({
                     id: idx,
                     value: val,
                     completed: false
                 }));
 
-                // --- ALGORITMO GULOSO DE CORRESPONDÊNCIA DE POUPANÇA (Mapeamento inteligente) ---
+                // Algoritmo guloso de correspondência de poupança (Mapeamento inteligente)
                 let targetToMatch = oldSavedAmount;
                 
                 // Mapeia bolinhas em ordem decrescente de valor para buscar a correspondência ideal
@@ -1199,7 +1182,7 @@
                     }
                 }
 
-                challenge.maxBubble = newMaxBubble;
+                challenge.maxBubble = opt.maxBubble;
                 challenge.bubbles = newBubbles;
             }
 
