@@ -197,23 +197,23 @@
                     </div>
                 </div>
 
-                <!-- Estatísticas do Desafio -->
+                <!-- Estatísticas do Desafio (Fontes diminuídas para tamanho mais sofisticado) -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-gray-800/60">
                     <div>
                         <span class="text-xs text-brand-grayText block">Total Guardado</span>
-                        <span id="detail-saved" class="text-2xl font-black text-brand-orange mt-1 block">R$ 0,00</span>
+                        <span id="detail-saved" class="text-lg sm:text-xl font-extrabold text-brand-orange mt-1 block">R$ 0,00</span>
                     </div>
                     <div>
                         <span class="text-xs text-brand-grayText block">Meta Final</span>
-                        <span id="detail-target" class="text-2xl font-black text-white mt-1 block">R$ 0,00</span>
+                        <span id="detail-target" class="text-lg sm:text-xl font-extrabold text-white mt-1 block">R$ 0,00</span>
                     </div>
                     <div>
                         <span class="text-xs text-brand-grayText block">Depósitos Concluídos</span>
-                        <span id="detail-progress-ratio" class="text-2xl font-bold mt-1 block">0 de 30</span>
+                        <span id="detail-progress-ratio" class="text-lg sm:text-xl font-bold text-gray-200 mt-1 block">0 de 30</span>
                     </div>
                     <div>
                         <span class="text-xs text-brand-grayText block">Falta Guardar</span>
-                        <span id="detail-remaining" class="text-2xl font-bold text-gray-300 mt-1 block">R$ 0,00</span>
+                        <span id="detail-remaining" class="text-lg sm:text-xl font-bold text-gray-300 mt-1 block">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -366,7 +366,7 @@
                     <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>O nosso gerador inteligente criará um tabuleiro perfeito com exatamente 5 colunas (sem sobrar espaços) utilizando o menor número de parcelas possível (máximo de 80 bolinhas). Os valores oscilarão de forma equilibrada para tornar o processo psicologicamente confortável.</span>
+                    <span>O nosso gerador inteligente criará um tabuleiro perfeito com exatamente 5 colunas (sem sobrar espaços) utilizando o menor número de parcelas possível (mínimo absoluto de 30 e máximo de 80 bolinhas). Os valores oscilarão de forma equilibrada para tornar o processo psicologicamente confortável.</span>
                 </div>
             </div>
 
@@ -971,11 +971,11 @@
             if (active) {
                 status.className = "text-[10px] mt-2 inline-block px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand-orange/10 text-brand-orange border border-brand-orange/20";
             } else {
-                status.className = "text-[10px] mt-2 inline-block px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand-dark text-brand-grayText border border-gray-800/80";
+                status.className = "text-[10px] mt-2 inline-block px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand-dark text-brand-grayText border border-gray-800/80";
             }
         }
 
-        // MODAL: CRIAR NOVO DESAFIO (Ações e Inicialização)
+        // MODAL: Ações de Criação do Novo Desafio
         function openCreateModal() {
             const modal = document.getElementById('create-modal');
             const content = document.getElementById('create-modal-content');
@@ -1025,12 +1025,12 @@
             // 2. Arredonda para cima para o próximo múltiplo de 5 para garantir a matriz 5xX perfeita
             let count = Math.ceil(minBubblesNeeded / 5) * 5;
             
-            // 3. Garante um mínimo saudável de bolinhas para diversão (3 linhas completas = 15 depósitos)
-            if (count < 15) {
-                count = 15;
+            // 3. Garante o novo mínimo saudável de 30 depósitos (6 linhas completas)
+            if (count < 30) {
+                count = 30;
             }
             
-            // 4. Limita a quantidade máxima absoluta a 80 bolinhas
+            // 4. Limita a quantidade máxima absoluta a 80 bolinhas (16 linhas completas)
             if (count > 80) {
                 count = 80;
                 // Caso a meta seja muito alta, reajusta sutilmente o valor máximo para não ultrapassar 80 bolinhas
