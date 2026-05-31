@@ -1,0 +1,316 @@
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <!-- Viewport ultra estrita para desativar zoom e dar sensação de App nativo -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>investGame - Poupança Gamificada</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            dark: '#080C14',
+                            card: '#121824',
+                            orange: '#FF6B00',
+                            orangeHover: '#E56000',
+                            grayText: '#94A3B8',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            /* Impede double-tap zoom nativamente no navegador */
+            touch-action: manipulation;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #080C14;
+            /* Desativa seleção de texto padrão para evitar comportamento de navegador */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            overflow-x: hidden;
+        }
+        
+        /* Permitir seleção apenas onde é estritamente necessário (campos de texto) */
+        input[type="text"], input[type="number"] {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        /* Barra de rolagem personalizada */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080C14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #FF6B00;
+        }
+    </style>
+</head>
+<body class="text-white min-h-screen flex flex-col selection:bg-brand-orange selection:text-white pb-24 md:pb-6">
+
+    <!-- Cabeçalho Principal (Navbar) -->
+    <header class="border-b border-gray-800 bg-brand-dark/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="showScreen('home')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-orange to-amber-500 flex items-center justify-center shadow-lg shadow-brand-orange/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">investGame</h1>
+                    <p class="text-xs text-brand-orange font-semibold tracking-wider uppercase">Poupança Inteligente</p>
+                </div>
+            </div>
+            
+            <!-- Botão de Novo Desafio (só aparece na Home) -->
+            <button id="header-new-challenge-btn" onclick="openCreateModal()" class="flex items-center gap-2 bg-brand-orange hover:bg-brand-orangeHover transition-all text-white font-bold py-2 px-4 rounded-xl text-sm shadow-lg shadow-brand-orange/15 transform hover:-translate-y-0.5 active:translate-y-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Novo Desafio</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="max-w-5xl w-full mx-auto px-4 py-6 flex-grow">
+
+        <!-- ================= TELA INICIAL (HOME) ================= -->
+        <section id="screen-home" class="space-y-8">
+            <!-- Painel de Estatísticas Globais -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 bg-brand-card border border-gray-800 rounded-3xl p-6 md:p-8 relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-brand-orange/5 rounded-full blur-3xl pointer-events-none"></div>
+                
+                <!-- Gráfico de Progresso Circular -->
+                <div class="flex flex-col items-center justify-center md:border-r border-gray-800/60 pb-6 md:pb-0 md:pr-6">
+                    <div class="relative w-36 h-36 flex items-center justify-center">
+                        <svg class="w-full h-full transform -rotate-90">
+                            <circle cx="72" cy="72" r="62" stroke="#1E293B" stroke-width="10" fill="transparent" />
+                            <circle id="global-progress-ring" cx="72" cy="72" r="62" stroke="#FF6B00" stroke-width="10" fill="transparent" stroke-dasharray="389.5" stroke-dashoffset="389.5" stroke-linecap="round" class="transition-all duration-700 ease-out" />
+                        </svg>
+                        <div class="absolute flex flex-col items-center">
+                            <span id="global-progress-percent" class="text-3xl font-black text-white">0%</span>
+                            <span class="text-[10px] text-brand-grayText uppercase tracking-wider font-bold">Concluído</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estatísticas de Valores Acumulados -->
+                <div class="md:col-span-2 flex flex-col justify-center space-y-6 md:pl-4">
+                    <div>
+                        <p class="text-xs text-brand-grayText uppercase font-semibold tracking-widest">Patrimônio Acumulado</p>
+                        <h2 id="global-saved-amount" class="text-4xl md:text-5xl font-black tracking-tight text-white mt-1">R$ 0,00</h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-brand-dark/40 border border-gray-800/40 rounded-2xl p-4">
+                            <span class="text-xs text-brand-grayText block">Meta Total Combinada</span>
+                            <span id="global-target-amount" class="text-lg font-bold text-gray-200 block mt-1">R$ 0,00</span>
+                        </div>
+                        <div class="bg-brand-dark/40 border border-gray-800/40 rounded-2xl p-4">
+                            <span class="text-xs text-brand-grayText block">Desafios Ativos</span>
+                            <span id="global-challenge-count" class="text-lg font-bold text-brand-orange block mt-1">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lista de Desafios Ativos -->
+            <div class="space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold tracking-tight flex items-center gap-2">
+                        <span>Seus Desafios de Poupança</span>
+                        <span id="badge-challenge-count" class="text-xs bg-brand-orange/10 text-brand-orange border border-brand-orange/20 rounded-full px-2.5 py-0.5 font-bold">0</span>
+                    </h3>
+                </div>
+
+                <!-- Grade de Desafios -->
+                <div id="challenges-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Cards dinâmicos inseridos via JavaScript -->
+                </div>
+
+                <!-- Estado Vazio (Caso não existam desafios ativos) -->
+                <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center bg-brand-card/50 border border-dashed border-gray-800 rounded-3xl p-8">
+                    <div class="w-16 h-16 rounded-2xl bg-brand-orange/10 flex items-center justify-center text-brand-orange mb-4">
+                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                        </svg>
+                    </div>
+                    <h4 class="text-lg font-bold text-white">Nenhum desafio ativo no momento</h4>
+                    <p class="text-sm text-brand-grayText max-w-sm mt-1 mb-6">Que tal começar um novo plano de economia? Defina a meta final e o jogo cria o tabuleiro de depósitos ideal!</p>
+                    <button onclick="openCreateModal()" class="bg-brand-orange hover:bg-brand-orangeHover transition-all text-white font-bold py-3 px-6 rounded-2xl text-sm shadow-md shadow-brand-orange/10">
+                        Criar meu Primeiro Desafio
+                    </button>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- ================= TELA DE DETALHES DO DESAFIO ================= -->
+        <section id="screen-details" class="hidden space-y-6">
+            <!-- Botão de Voltar -->
+            <button onclick="showScreen('home')" class="inline-flex items-center gap-2 text-brand-grayText hover:text-white transition-colors py-2 group text-sm font-semibold">
+                <svg class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                <span>Voltar para a Home</span>
+            </button>
+
+            <!-- Card Geral do Desafio Selecionado -->
+            <div id="details-hero" class="bg-brand-card border border-gray-800 rounded-3xl p-6 relative overflow-hidden">
+                <div class="absolute -top-12 -right-12 w-48 h-48 bg-brand-orange/10 rounded-full blur-2xl"></div>
+                
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <span class="text-xs text-brand-orange font-bold uppercase tracking-widest">Desafio Ativo</span>
+                        <h2 id="detail-title" class="text-3xl font-black mt-1">Carro Novo</h2>
+                        <p id="detail-date" class="text-xs text-brand-grayText mt-1">Iniciado em 12/10/2023</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <!-- Botão de excluir aciona o modal estilizado -->
+                        <button onclick="openConfirmDeleteModal()" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold p-3 rounded-2xl text-xs flex items-center gap-1.5 border border-red-500/20 transition-all">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span>Excluir Desafio</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Estatísticas do Desafio -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-gray-800/60">
+                    <div>
+                        <span class="text-xs text-brand-grayText block">Total Guardado</span>
+                        <span id="detail-saved" class="text-2xl font-black text-brand-orange mt-1 block">R$ 0,00</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-brand-grayText block">Meta Final</span>
+                        <span id="detail-target" class="text-2xl font-black text-white mt-1 block">R$ 0,00</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-brand-grayText block">Depósitos Concluídos</span>
+                        <span id="detail-progress-ratio" class="text-2xl font-bold mt-1 block">0 de 30</span>
+                    </div>
+                    <div>
+                        <span class="text-xs text-brand-grayText block">Falta Guardar</span>
+                        <span id="detail-remaining" class="text-2xl font-bold text-gray-300 mt-1 block">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- Barra de Progresso do Desafio -->
+                <div class="mt-6">
+                    <div class="flex items-center justify-between text-xs text-brand-grayText mb-2">
+                        <span>Progresso do Desafio</span>
+                        <span id="detail-percent" class="font-bold text-white">0%</span>
+                    </div>
+                    <div class="w-full bg-brand-dark h-3 rounded-full overflow-hidden p-0.5 border border-gray-800">
+                        <div id="detail-progress-bar" class="bg-gradient-to-r from-brand-orange to-amber-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABULEIRO DE JOGO -->
+            <div class="space-y-4">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div>
+                        <h3 class="text-lg font-bold">Tabuleiro de Depósitos</h3>
+                        <p class="text-xs text-brand-grayText mt-0.5">Dica: Selecione várias bolinhas para depositar de uma vez só!</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="selectAllUncompleted()" class="bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 text-xs font-bold py-2 px-3 rounded-xl transition-all">
+                            Selecionar Pendentes
+                        </button>
+                        <button onclick="clearSelection()" class="bg-brand-card hover:bg-gray-800 text-gray-300 border border-gray-800 text-xs font-bold py-2 px-3 rounded-xl transition-all">
+                            Limpar Seleção
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Grade Física das Bolinhas - Exclusivamente 5 Colunas para Grid Perfeito -->
+                <div id="bubbles-grid" class="grid grid-cols-5 gap-2 sm:gap-3 bg-brand-card border border-gray-800 p-4 sm:p-6 md:p-8 rounded-3xl">
+                    <!-- Inserido dinamicamente via JS -->
+                </div>
+            </div>
+
+            <!-- CONQUISTAS GAMIFICADAS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-brand-card border border-gray-800 rounded-2xl p-5 flex items-start gap-4">
+                    <div id="badge-icon-1" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all bg-brand-dark text-brand-grayText border border-gray-800/80">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm">Primeiro Passo</h4>
+                        <p class="text-xs text-brand-grayText mt-1">Faça o primeiro depósito do tabuleiro para desbloquear esta medalha.</p>
+                        <span id="badge-status-1" class="text-[10px] mt-2 inline-block px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand-dark text-brand-grayText border border-gray-800/80">Pendente</span>
+                    </div>
+                </div>
+
+                <div class="bg-brand-card border border-gray-800 rounded-2xl p-5 flex items-start gap-4">
+                    <div id="badge-icon-2" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all bg-brand-dark text-brand-grayText border border-gray-800/80">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm">Metade do Caminho</h4>
+                        <p class="text-xs text-brand-grayText mt-1">Conclua metade de todas as bolinhas de poupança desta tela.</p>
+                        <span id="badge-status-2" class="text-[10px] mt-2 inline-block px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand-dark text-brand-grayText border border-gray-800/80">Pendente</span>
+                    </div>
+                </div>
+
+                <div class="bg-brand-card border border-gray-800 rounded-2xl p-5 flex items-start gap-4">
+                    <div id="badge-icon-3" class="w-12 h-12 rounded-xl flex items-center justify-center transition-all bg-brand-dark text-brand-grayText border border-gray-800/80">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-sm">Foco nos Gigantes</h4>
+                        <p class="text-xs text-brand-grayText mt-1">Complete todos os depósitos de maior valor deste desafio de poupança.</p>
+                        <span id="badge-status-3" class="text-[10px] mt-2 inline-block px-2 py-0.5 rounded-full font-bold uppercase tracking-wider bg-brand-dark text-brand-grayText border border-gray-800/80">Pendente</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================= BARRA DE SELEÇÃO EM LOTE (BARRA FLUTUANTE) ================= -->
+    <div id="batch-bar" class="fixed bottom-0 left-0 right-0 bg-brand-card border-t border-gray-800 py-4 px-6 transform translate-y-full transition-transform duration-300 z-50 shadow-2xl">
+        <div class="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-brand-orange/10 text-brand-orange flex items-center justify-center font-black" id="batch-count">
+                    0
+                </div>
+                <div>
+                    <p class="text-sm font-bold text-white">Bolinhas selecionadas para ação no lote</p>
+                    <p class="text-xs text-brand-grayText">Soma acumulada do lote: <span id="batch-sum" class="text-brand-orange font-bold text-sm">R$ 0,00</span></p>
+                </div>
+            </div>
+            
+            <div class="flex gap-2 w-full sm:w-auto">
+                <button onclick="clearSelection()" class="flex-1 sm:flex-init
