@@ -197,7 +197,7 @@
                     </div>
                 </div>
 
-                <!-- Estatísticas do Desafio (Fontes diminuídas para tamanho mais sofisticado) -->
+                <!-- Estatísticas do Desafio (Fontes reduzidas para sofisticação) -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-gray-800/60">
                     <div>
                         <span class="text-xs text-brand-grayText block">Total Guardado</span>
@@ -366,7 +366,7 @@
                     <svg class="w-5 h-5 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>O nosso gerador inteligente criará um tabuleiro perfeito com exatamente 5 colunas (sem sobrar espaços) utilizando o menor número de parcelas possível (mínimo absoluto de 30 e máximo de 80 bolinhas). Os valores oscilarão de forma equilibrada para tornar o processo psicologicamente confortável.</span>
+                    <span>O nosso gerador inteligente criará um tabuleiro perfeito com exatamente 5 colunas (sem sobrar espaços) utilizando o menor número de parcelas possível (mínimo de 30 e máximo de 80 bolinhas). Os valores oscilarão de forma equilibrada para tornar o processo psicologicamente confortável.</span>
                 </div>
             </div>
 
@@ -410,11 +410,17 @@
                     <input type="text" id="edit-title" placeholder="Nome do seu objetivo" class="w-full bg-brand-dark border border-gray-800 focus:border-brand-orange rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-colors">
                 </div>
 
+                <!-- Info Poupança Atual (Destaque do progresso) -->
+                <div class="bg-brand-dark/50 p-4 rounded-xl border border-gray-800/80 flex items-center justify-between">
+                    <span class="text-xs text-brand-grayText font-bold uppercase tracking-wider">Total poupado até agora:</span>
+                    <span id="edit-saved-info" class="text-sm font-extrabold text-brand-orange">R$ 0,00</span>
+                </div>
+
                 <!-- Meta Total -->
                 <div>
                     <label class="block text-xs text-brand-grayText font-bold uppercase tracking-wider mb-2">Meta de Valor Total (R$)</label>
                     <input type="number" id="edit-target" placeholder="Nova meta financeira" class="w-full bg-brand-dark border border-gray-800 focus:border-brand-orange rounded-xl px-4 py-3 text-sm text-white focus:outline-none transition-colors">
-                    <p class="text-[10px] text-brand-grayText mt-1.5">Nota: Ao mudar a meta, os valores das bolinhas serão recalculados de forma proporcional automaticamente!</p>
+                    <p class="text-[10px] text-brand-grayText mt-1.5 leading-relaxed">Nota: Ao mudar a meta, os valores das bolinhas serão recalculados e o sistema marcará automaticamente a quantidade equivalente para proteger o seu progresso poupado atual!</p>
                 </div>
 
                 <!-- Área Destrutiva de Exclusão -->
@@ -519,12 +525,12 @@
 
         // Salvar no LocalStorage
         function saveToStorage() {
-            localStorage.setItem('invest_game_challenges_br_v3', JSON.stringify(challenges));
+            localStorage.setItem('invest_game_challenges_br_v4', JSON.stringify(challenges));
         }
 
         // Carregar do LocalStorage
         function loadFromStorage() {
-            const saved = localStorage.getItem('invest_game_challenges_br_v3');
+            const saved = localStorage.getItem('invest_game_challenges_br_v4');
             if (saved) {
                 try {
                     challenges = JSON.parse(saved);
@@ -1069,8 +1075,13 @@
             const challenge = challenges.find(c => c.id === id);
             if (!challenge) return;
 
+            const totalSaved = challenge.bubbles
+                .filter(b => b.completed)
+                .reduce((sum, b) => sum + b.value, 0);
+
             document.getElementById('edit-title').value = challenge.title;
             document.getElementById('edit-target').value = challenge.targetAmount;
+            document.getElementById('edit-saved-info').innerText = formatMoney(totalSaved);
 
             const modal = document.getElementById('edit-modal');
             const content = document.getElementById('edit-modal-content');
@@ -1092,7 +1103,7 @@
             }, 300);
         }
 
-        // Salvar alterações e recalcular bolinhas de forma proporcional caso o valor total mude
+        // Salvar alterações e recalcular bolinhas de forma proporcional caso o valor total mude, preservando o valor poupado
         function saveEditedChallenge() {
             const challenge = challenges.find(c => c.id === editingChallengeId);
             if (!challenge) return;
@@ -1110,9 +1121,13 @@
             }
 
             const oldTarget = challenge.targetAmount;
+            const oldSavedAmount = challenge.bubbles
+                .filter(b => b.completed)
+                .reduce((sum, b) => sum + b.value, 0);
+
             challenge.title = newTitle;
 
-            // Se o valor total mudou, escalamos todas as bolinhas proporcionalmente
+            // Se o valor total mudou, escalamos todas as bolinhas proporcionalmente e aplicamos mapeamento inteligente do progresso
             if (newTarget !== oldTarget) {
                 const scaleFactor = newTarget / oldTarget;
                 challenge.targetAmount = newTarget;
@@ -1126,34 +1141,66 @@
                 else if (approxMax >= 20) step = 5;
                 else step = 1;
 
-                challenge.maxBubble = Math.round(approxMax / step) * step;
+                let newMaxBubble = Math.round(approxMax / step) * step;
+                if (newMaxBubble <= 0) newMaxBubble = step;
 
-                // Escalar individualmente cada bolinha
-                challenge.bubbles.forEach(b => {
-                    b.value = Math.round((b.value * scaleFactor) / step) * step;
-                    if (b.value <= 0) b.value = step;
-                });
+                // Otimização de bolinhas
+                let minBubblesNeeded = Math.ceil(newTarget / newMaxBubble);
+                let count = Math.ceil(minBubblesNeeded / 5) * 5;
+                
+                if (count < 30) count = 30;
+                if (count > 80) {
+                    count = 80;
+                    if (newMaxBubble * 80 < newTarget) {
+                        newMaxBubble = Math.ceil(newTarget / 80);
+                    }
+                }
 
-                // Compensar diferenças residuais de arredondamento para a meta fechar precisamente
-                let currentSum = challenge.bubbles.reduce((sum, b) => sum + b.value, 0);
-                let diff = newTarget - currentSum;
-                let limitCounter = 0;
+                // Gera novos valores
+                const newValues = generateSmartValues(newTarget, newMaxBubble, count);
 
-                while (diff !== 0 && limitCounter < 1000) {
-                    limitCounter++;
-                    for (let i = 0; i < challenge.bubbles.length; i++) {
-                        if (diff === 0) break;
-                        if (diff > 0) {
-                            challenge.bubbles[i].value += step;
-                            diff -= step;
-                        } else {
-                            if (challenge.bubbles[i].value - step > 0) {
-                                challenge.bubbles[i].value -= step;
-                                diff += step;
+                // Cria novos objetos desmarcados
+                let newBubbles = newValues.map((val, idx) => ({
+                    id: idx,
+                    value: val,
+                    completed: false
+                }));
+
+                // --- ALGORITMO GULOSO DE CORRESPONDÊNCIA DE POUPANÇA (Mapeamento inteligente) ---
+                let targetToMatch = oldSavedAmount;
+                
+                // Mapeia bolinhas em ordem decrescente de valor para buscar a correspondência ideal
+                let sortedIndices = newBubbles
+                    .map((b, idx) => ({ idx: idx, value: b.value }))
+                    .sort((a, b) => b.value - a.value);
+
+                for (let item of sortedIndices) {
+                    if (item.value <= targetToMatch) {
+                        newBubbles[item.idx].completed = true;
+                        targetToMatch -= item.value;
+                    }
+                }
+
+                // Se houver resíduo, marca a bolinha restante mais próxima ao valor residual para máxima precisão
+                if (targetToMatch > 0) {
+                    let bestIdx = -1;
+                    let minDiff = Infinity;
+                    for (let i = 0; i < newBubbles.length; i++) {
+                        if (!newBubbles[i].completed) {
+                            let diff = Math.abs(newBubbles[i].value - targetToMatch);
+                            if (diff < minDiff) {
+                                minDiff = diff;
+                                bestIdx = i;
                             }
                         }
                     }
+                    if (bestIdx !== -1 && minDiff < targetToMatch) {
+                        newBubbles[bestIdx].completed = true;
+                    }
                 }
+
+                challenge.maxBubble = newMaxBubble;
+                challenge.bubbles = newBubbles;
             }
 
             saveToStorage();
@@ -1165,7 +1212,12 @@
                 renderHome();
             }
 
-            showToast("Sucesso", "Desafio atualizado com sucesso!", "success");
+            // Calcula o novo progresso real após remapeamento
+            const newSavedReal = challenge.bubbles
+                .filter(b => b.completed)
+                .reduce((sum, b) => sum + b.value, 0);
+
+            showToast("Desafio Atualizado", `Progresso de poupança preservado em ${formatMoney(newSavedReal)}!`, "success");
         }
 
         // Acionar a exclusão do desafio a partir do modal de gerenciamento
