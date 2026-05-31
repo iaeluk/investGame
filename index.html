@@ -26,6 +26,8 @@
     </script>
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti CDN para efeito Premium de comemoração -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         html, body {
             /* Impede double-tap zoom nativamente no navegador */
@@ -123,7 +125,6 @@
                         <h2 id="global-saved-amount" class="text-4xl md:text-5xl font-black tracking-tight text-white mt-1">R$ 0,00</h2>
                     </div>
 
-                    <!-- Ajustado para colunas responsivas e anti-transbordo com min-w-0 e truncate -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         <div class="bg-brand-dark/40 border border-gray-800/40 rounded-2xl p-3 sm:p-4 min-w-0">
                             <span class="text-xs text-brand-grayText block truncate">Meta Total Combinada</span>
@@ -499,23 +500,39 @@
         let selectedBubbles = []; // Guarda os IDs das bolinhas selecionadas em lote
         let editingChallengeId = null; // Guarda o id do desafio sendo editado no momento
 
-        // Bloqueio completo de gestos de zoom (Pinch-to-zoom e gestos Safari)
-        document.addEventListener('touchstart', function (event) {
-            if (event.touches.length > 1) {
-                event.preventDefault(); // Impede zoom multitoque (pinça)
-            }
-        }, { passive: false });
+        // Função para disparar a explosão de Confetes Premium
+        function launchCelebrationConfetti() {
+            var duration = 2.5 * 1000;
+            var end = Date.now() + duration;
 
-        document.addEventListener('gesturestart', function (e) {
-            e.preventDefault(); // Impede gestos nativos de zoom no iOS Safari
-        });
+            (function frame() {
+                confetti({
+                    particleCount: 4,
+                    angle: 60,
+                    spread: 55,
+                    origin: { x: 0, y: 0.85 },
+                    colors: ['#FF6B00', '#FFA500', '#FFFFFF', '#22C55E']
+                });
+                confetti({
+                    particleCount: 4,
+                    angle: 120,
+                    spread: 55,
+                    origin: { x: 1, y: 0.85 },
+                    colors: ['#FF6B00', '#FFA500', '#FFFFFF', '#22C55E']
+                });
 
-        // Impede zoom ao rolar scroll do mouse segurando a tecla Ctrl
-        document.addEventListener('wheel', function (e) {
-            if (e.ctrlKey) {
-                e.preventDefault();
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            }());
+        }
+
+        // Função auxiliar para vibração háptica no celular
+        function triggerHapticFeedback() {
+            if (navigator.vibrate) {
+                navigator.vibrate(12); // Vibração sutil premium
             }
-        }, { passive: false });
+        }
 
         // Escuta o carregamento inicial da página
         window.addEventListener('DOMContentLoaded', () => {
@@ -541,49 +558,36 @@
             }
         }
 
-        // ================= NOVO GERADOR CENTRALIZADO DE DESAFIOS =================
-        // Desenha uma curva progressiva de dificuldade, garante dezenas limpas terminadas em 0
-        // e um tabuleiro perfeito alinhado em 5 colunas de 30 a 100 depósitos.
+        // ================= GERADOR CENTRALIZADO DE DESAFIOS =================
         function getOptimizedChallengeData(target, maxBubble) {
-            // 1. Encontra a quantidade inicial teórica baseada em um rendimento médio saudável de 55% da bolinha máxima
             let theoreticalCount = Math.ceil(target / (maxBubble * 0.55));
-            
-            // 2. Arredonda para cima para o múltiplo de 5 para garantir o grid 5xX perfeito
             let count = Math.ceil(theoreticalCount / 5) * 5;
             
-            // 3. Trava nos limites saudáveis (Mínimo de 30 e o novo teto de 100 bolinhas)
-            if (count < 30) {
-                count = 30;
-            }
+            if (count < 30) count = 30;
             if (count > 100) {
                 count = 100;
-                // Caso a meta seja ultra pesada, ajusta a bolinha máxima para permitir concluir com 100 passos
                 if (maxBubble * 100 < target) {
                     maxBubble = Math.ceil(target / 100);
                 }
             }
 
-            // 4. Determina o valor do Step garantindo que termine em zero (múltiplo de 10)
             let step = 10;
             if (maxBubble >= 1500) step = 100;
             else if (maxBubble >= 500) step = 50;
             else if (maxBubble >= 100) step = 10;
             else step = 10;
 
-            // 5. Define um valor mínimo saudável para os primeiros depósitos básicos
             let minVal = Math.max(step, Math.round((maxBubble * 0.15) / step) * step);
             
-            // 6. Cria valores base usando uma curva de crescimento exponencial (mais valores menores/médios, poucos valores grandes)
             let values = [];
             for (let i = 0; i < count; i++) {
-                let ratio = Math.pow(i / (count - 1 || 1), 1.6); // Exponente 1.6 acentua a curva gamificada
+                let ratio = Math.pow(i / (count - 1 || 1), 1.6);
                 let val = minVal + ratio * (maxBubble - minVal);
                 val = Math.round(val / step) * step;
                 if (val <= 0) val = step;
                 values.push(val);
             }
 
-            // 7. Balanceador fino de precisão para atingir a meta perfeitamente mantendo múltiplos de Step
             let currentSum = values.reduce((a, b) => a + b, 0);
             let diff = target - currentSum;
             let limitCounter = 0;
@@ -606,7 +610,6 @@
                 }
             }
 
-            // Se ainda restar resíduo (muito raro), distribui sem restrição de teto máximo
             if (diff > 0) {
                 for (let i = 0; i < values.length; i++) {
                     if (diff === 0) break;
@@ -623,7 +626,6 @@
                 }
             }
 
-            // 8. Embaralhamento dinâmico em estilo onda para alternar picos e vales de dificuldade no grid de 5 colunas
             values.sort((a, b) => a - b);
             let finalValues = [];
             let leftIdx = 0;
@@ -657,12 +659,12 @@
 
             if (screen === 'home') {
                 document.getElementById('screen-home').classList.remove('hidden');
-                newChallengeBtn.classList.remove('hidden'); // Exibe botão de novo desafio na Home
+                newChallengeBtn.classList.remove('hidden');
                 renderHome();
                 clearSelection();
             } else if (screen === 'details') {
                 document.getElementById('screen-details').classList.remove('hidden');
-                newChallengeBtn.classList.add('hidden'); // Oculta botão de novo desafio nos detalhes
+                newChallengeBtn.classList.add('hidden');
                 renderDetails();
             }
         }
@@ -704,10 +706,10 @@
                 const percent = Math.min(100, Math.round((totalSaved / totalTarget) * 100));
 
                 const card = document.createElement('div');
-                card.className = "bg-brand-card border border-gray-800/80 hover:border-brand-orange/40 rounded-3xl p-6 transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden group flex flex-col justify-between";
+                card.className = "bg-brand-card border border-gray-800/80 hover:border-brand-orange/40 rounded-3xl p-6 transition-all duration-300 relative overflow-hidden group flex flex-col justify-between";
                 
+                // Card redesenhado verticalmente para não espremer os valores e nem cortar (Fiel ao pedido do usuário)
                 card.innerHTML = `
-                    <!-- Efeito de hover brilhoso -->
                     <div class="absolute -top-12 -right-12 w-32 h-32 bg-brand-orange/5 rounded-full blur-2xl group-hover:bg-brand-orange/10 transition-all"></div>
                     
                     <!-- Botão de engrenagem absoluto (superior direito do card) -->
@@ -718,34 +720,35 @@
                         </svg>
                     </button>
 
-                    <!-- Área clicável do card para entrar no desafio -->
-                    <div onclick="goToChallenge('${challenge.id}')" class="cursor-pointer flex-grow flex flex-col justify-between pr-4 min-w-0">
-                        <div>
-                            <div class="flex justify-between items-start mb-4 pr-6">
-                                <div class="min-w-0">
-                                    <h4 class="text-xl font-bold tracking-tight text-white group-hover:text-brand-orange transition-colors truncate">${challenge.title}</h4>
-                                    <span class="text-[10px] text-brand-grayText uppercase font-semibold mt-1 inline-block">Criado em ${challenge.createdAt}</span>
-                                </div>
-                                <span class="text-xs bg-brand-orange/10 text-brand-orange font-bold px-2.5 py-1 rounded-xl border border-brand-orange/10 shrink-0">${percent}%</span>
+                    <!-- Conteúdo com empilhamento limpo sem cortes -->
+                    <div class="w-full flex flex-col space-y-4">
+                        <div class="flex justify-between items-start pr-8">
+                            <div class="min-w-0">
+                                <h4 class="text-xl font-bold tracking-tight text-white group-hover:text-brand-orange transition-colors truncate">${challenge.title}</h4>
+                                <span class="text-[10px] text-brand-grayText uppercase font-semibold mt-1 inline-block">Criado em ${challenge.createdAt}</span>
                             </div>
+                            <span class="text-xs bg-brand-orange/10 text-brand-orange border border-brand-orange/30 font-bold px-2.5 py-1 rounded-xl shrink-0">${percent}%</span>
+                        </div>
 
-                            <div class="w-full bg-brand-dark h-2 rounded-full overflow-hidden p-0.5 border border-gray-800 mb-6">
-                                <div class="bg-gradient-to-r from-brand-orange to-amber-500 h-full rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                        <div class="w-full bg-brand-dark h-2 rounded-full overflow-hidden p-0.5 border border-gray-800">
+                            <div class="bg-gradient-to-r from-brand-orange to-amber-500 h-full rounded-full transition-all duration-500" style="width: ${percent}%"></div>
+                        </div>
+
+                        <!-- Valores ocupam a largura total livre sem nenhum botão ao lado -->
+                        <div class="pt-2 border-t border-gray-800/40">
+                            <span class="text-xs text-brand-grayText block">Guardado</span>
+                            <div class="text-lg font-black text-white truncate w-full mt-0.5">
+                                ${formatMoney(totalSaved)} <span class="text-xs text-brand-grayText font-normal">/ ${formatMoney(totalTarget)}</span>
                             </div>
                         </div>
 
-                        <div class="flex items-end justify-between pt-4 border-t border-gray-800/60 mt-auto">
-                            <div class="min-w-0 pr-2">
-                                <span class="text-xs text-brand-grayText block">Guardado</span>
-                                <span class="text-lg font-black text-white block truncate">${formatMoney(totalSaved)} <span class="text-xs text-brand-grayText font-normal">/ ${formatMoney(totalTarget)}</span></span>
-                            </div>
-                            <button class="bg-brand-dark hover:bg-brand-orange text-white border border-gray-800 hover:border-brand-orange hover:shadow-lg hover:shadow-brand-orange/15 font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center gap-1.5 shrink-0">
-                                <span>Jogar</span>
-                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </button>
-                        </div>
+                        <!-- Botão Guardar unificado abaixo, em laranja, sem obstruir os numerais -->
+                        <button onclick="goToChallenge('${challenge.id}')" class="w-full bg-brand-orange hover:bg-brand-orangeHover text-white font-extrabold py-3 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-brand-orange/10 active:scale-[0.98]">
+                            <span>Guardar</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -846,6 +849,7 @@
 
         // Toggle seleção para depósito/estorno múltiplo
         function toggleBubbleSelection(bubbleId, isCompleted) {
+            triggerHapticFeedback();
             const index = selectedBubbles.indexOf(bubbleId);
             if (index > -1) {
                 selectedBubbles.splice(index, 1);
@@ -917,22 +921,23 @@
                 actionApplied = 'deposito';
             }
 
+            // Verifica se completou 100% após a ação para lançar confetes
+            const totalBubbles = challenge.bubbles.length;
+            const completedCount = challenge.bubbles.filter(b => b.completed).length;
+
             saveToStorage();
             clearSelection();
             renderDetails();
 
             if (actionApplied === 'deposito') {
-                showToast(
-                    "Depósito Confirmado!",
-                    "Guardou com sucesso " + formatMoney(sumSaved) + "!",
-                    "success"
-                );
+                if (completedCount === totalBubbles) {
+                    launchCelebrationConfetti();
+                    showToast("PARABÉNS! 100% CONCLUÍDO", `Você atingiu sua meta de ${formatMoney(challenge.targetAmount)}!`, "success");
+                } else {
+                    showToast("Depósito Confirmado!", `Guardou com sucesso ${formatMoney(sumSaved)}!`, "success");
+                }
             } else {
-                showToast(
-                    "Alterações Desfeitas",
-                    "O valor de " + formatMoney(sumSaved) + " retornou ao saldo em falta.",
-                    "info"
-                );
+                showToast("Alterações Desfeitas", `O valor de ${formatMoney(sumSaved)} retornou ao saldo em falta.`, "info");
             }
         }
 
@@ -963,7 +968,6 @@
 
         // Gestão das medalhas de conquistas
         function updateAchievements(challenge, completedCount, totalBubbles) {
-            // Medalha 1: Primeiro Passo
             const step1Passed = completedCount >= 1;
             setAchievementStatus(
                 'badge-icon-1', 'badge-status-1',
@@ -972,7 +976,6 @@
                 step1Passed
             );
 
-            // Medalha 2: Metade do caminho
             const step2Passed = completedCount >= Math.ceil(totalBubbles / 2);
             setAchievementStatus(
                 'badge-icon-2', 'badge-status-2',
@@ -981,7 +984,6 @@
                 step2Passed
             );
 
-            // Medalha 3: Foco nos Gigantes (completar os 20% valores mais elevados)
             const sortedBubbles = [...challenge.bubbles].sort((a,b) => b.value - a.value);
             const highThreshold = sortedBubbles[Math.floor(totalBubbles * 0.2)]?.value || 0;
             const highValueBubbles = challenge.bubbles.filter(b => b.value >= highThreshold);
@@ -1052,7 +1054,6 @@
                 return;
             }
 
-            // Invoca o algoritmo refinado de escalonamento exponencial de dezenas
             const opt = getOptimizedChallengeData(target, maxBubble);
 
             const newChallenge = {
@@ -1111,7 +1112,7 @@
             }, 300);
         }
 
-        // Salvar alterações e recalcular bolinhas de forma proporcional usando o novo gerador
+        // Salvar alterações e recalcular bolinhas de forma proporcional preservando o valor poupado
         function saveEditedChallenge() {
             const challenge = challenges.find(c => c.id === editingChallengeId);
             if (!challenge) return;
@@ -1135,24 +1136,17 @@
 
             challenge.title = newTitle;
 
-            // Se o valor total mudou, escalamos todas as bolinhas proporcionalmente usando o gerador otimizado
             if (newTarget !== oldTarget) {
                 challenge.targetAmount = newTarget;
-
-                // Usa o gerador unificado para produzir uma nova grade saudável
                 const opt = getOptimizedChallengeData(newTarget, challenge.maxBubble);
 
-                // Cria novos objetos desmarcados
                 let newBubbles = opt.values.map((val, idx) => ({
                     id: idx,
                     value: val,
                     completed: false
                 }));
 
-                // Algoritmo guloso de correspondência de poupança (Mapeamento inteligente)
                 let targetToMatch = oldSavedAmount;
-                
-                // Mapeia bolinhas em ordem decrescente de valor para buscar a correspondência ideal
                 let sortedIndices = newBubbles
                     .map((b, idx) => ({ idx: idx, value: b.value }))
                     .sort((a, b) => b.value - a.value);
@@ -1164,7 +1158,6 @@
                     }
                 }
 
-                // Se houver resíduo, marca a bolinha restante mais próxima ao valor residual para máxima precisão
                 if (targetToMatch > 0) {
                     let bestIdx = -1;
                     let minDiff = Infinity;
@@ -1186,6 +1179,9 @@
                 challenge.bubbles = newBubbles;
             }
 
+            // Verifica se a readequação bateu 100%
+            const isNowComplete = challenge.bubbles.every(b => b.completed);
+
             saveToStorage();
             closeEditModal();
             
@@ -1195,7 +1191,10 @@
                 renderHome();
             }
 
-            // Calcula o novo progresso real após remapeamento
+            if (isNowComplete) {
+                launchCelebrationConfetti();
+            }
+
             const newSavedReal = challenge.bubbles
                 .filter(b => b.completed)
                 .reduce((sum, b) => sum + b.value, 0);
